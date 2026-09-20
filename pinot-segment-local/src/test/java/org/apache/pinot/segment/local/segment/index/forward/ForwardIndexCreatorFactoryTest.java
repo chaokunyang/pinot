@@ -140,7 +140,8 @@ public class ForwardIndexCreatorFactoryTest {
           .withTargetDocsPerChunk(2)
           .build();
       TableConfig tableConfig = new TableConfigBuilder(TableType.OFFLINE).setTableName("testTable").build();
-      // Legacy compression stats are opted in here on purpose: a codecSpec column never reports them.
+      // Compression stats are opted in here on purpose: a V7 codecSpec column reports its uncompressed
+      // value size (totalDocs * storedType.size()) even though it has no legacy ChunkCompressionType.
       tableConfig.getIndexingConfig().setCompressionStatsEnabled(true);
       long[] values = storedType == DataType.INT
           ? new long[]{11, 13, 21}
@@ -157,7 +158,8 @@ public class ForwardIndexCreatorFactoryTest {
           }
         }
         creator.seal();
-        assertEquals(creator.getRawForwardIndexUncompressedValueSizeInBytes(), -1L);
+        assertEquals(creator.getRawForwardIndexUncompressedValueSizeInBytes(),
+            (long) values.length * storedType.size());
       }
       File indexFile = new File(indexDir, COLUMN_NAME + V1Constants.Indexes.RAW_SV_FORWARD_INDEX_FILE_EXTENSION);
       assertTrue(indexFile.exists());
